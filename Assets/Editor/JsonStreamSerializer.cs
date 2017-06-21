@@ -6,8 +6,6 @@ using UnityEngine;
 using UnityEditor;
 using System.Collections;
 using System.Collections.Generic;
-using Timer = System.Diagnostics.Stopwatch;
-
 
 public class JsonStreamSerializer<T>: FileStream, IStreamSerializer<T>
 {
@@ -16,12 +14,31 @@ public class JsonStreamSerializer<T>: FileStream, IStreamSerializer<T>
 
   public Queue<T> queue {get; set;}
 
+  private StreamWriter sw;
+
   public JsonStreamSerializer(int queueLength = 10000, int chunkSize = 50) : 
     base(AssetDatabase.GenerateUniqueAssetPath("assets/streamedJSON"), FileMode.CreateNew) 
   {
     this.chunkSize = chunkSize;
     this.queue = new Queue<T>(queueLength);
     stopWhenDrained = false;
+    sw = new StreamWriter(this);
+    InitJsonStream();
+  }
+
+  // waiting until we need to record something to make the first write slows it down
+  // so here, go ahead & start the json array when we init to have stream ready
+  private void InitJsonStream()
+  {
+    sw.WriteLine('[');
+  }
+
+  private void EndJsonStream()
+  {
+    sw.Write(']');
+    sw.Flush();
+    Flush();
+    EditorApplication.update -= EndJsonStream;
   }
 
   public void Add(T obj)
@@ -37,19 +54,17 @@ public class JsonStreamSerializer<T>: FileStream, IStreamSerializer<T>
   public virtual void StopSaving()
   {
     EditorApplication.update -= SaveChunkOnUpdate;
-    Flush();
+    EditorApplication.update += EndJsonStream;
   }
 
-  // we do allocate some memory for strings here, 
+  // we do allocate some memory for strings here, within JsonUtility, 
   // but it doesn't seem problematic enough to actually cause hitching
-  // TODO - consider seeing if using a StringBuilder will allow us to reduce allocations
+  // this writes to the OS file buffer , not disk directly - OS flushes to disk.
   internal void WriteChunkJson(Chunk<T> chunk)
   {
-    // add the comma to seperate chunks in the stream - 
-    // TODO consider using linebreaks and reading by line instead
-    string json = JsonUtility.ToJson(chunk) + ",";
-    byte[] bytes = Encoding.UTF8.GetBytes(json);
-    Write(bytes, 0, bytes.Length);
+    sw.Write(JsonUtility.ToJson(chunk));
+    // add the comma to seperate objects in the stream array
+    sw.WriteLine(',');
   }
 
   internal virtual void SaveChunkOnUpdate()
@@ -61,7 +76,8 @@ public class JsonStreamSerializer<T>: FileStream, IStreamSerializer<T>
       else 
         return; 
     }
-    // TODO - preallocate chunks instead, but they're cheap
+    // TODO - maybe preallocate chunks instead, but they're cheap lists of refs
+    // TODO - don't write if less than 2/3 the buffer size ?
     var chunk = new Chunk<T>();
     // TODO - maybe more optimized if array-to-array copy ?
     chunk.data = queue.DequeueChunk(chunkSize).ToArray();

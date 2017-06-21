@@ -1,16 +1,12 @@
-﻿using System;
-using System.IO;
-using System.Text;
-using System.Linq;
+﻿using System.Linq;
 using UnityEngine;
-using UnityEditor;
-using System.Collections;
 using System.Collections.Generic;
 using Timer = System.Diagnostics.Stopwatch;
 
+
+// This class exists to be able to debug & performance test the serializer
 public class TestJsonStreamSerializer<T> : JsonStreamSerializer<T>
 {
-  // these are just for performance testing
   private Timer timer = new Timer();
   private Timer chunkTimer = new Timer();
   private List<int> chunkTimingRecords = new List<int>();
