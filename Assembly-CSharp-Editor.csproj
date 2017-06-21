@@ -53,11 +53,13 @@
   <ItemGroup>
      <Compile Include="Assets\Editor\Chunk.cs" />
      <Compile Include="Assets\Editor\DataContainer.cs" />
-     <Compile Include="Assets\Editor\DataWrapper.cs" />
-     <Compile Include="Assets\Editor\GarbageTests.cs" />
+     <Compile Include="Assets\Editor\IStreamSerializer.cs" />
      <Compile Include="Assets\Editor\JsonStreamSerializer.cs" />
-     <Compile Include="Assets\Editor\JsonStreamTestMenu.cs" />
-     <Compile Include="Assets\Editor\SerializationSpeedTests.cs" />
+     <Compile Include="Assets\Editor\QueueExtensions.cs" />
+     <Compile Include="Assets\Editor\Tests\GarbageTests.cs" />
+     <Compile Include="Assets\Editor\Tests\JsonStreamTestMenu.cs" />
+     <Compile Include="Assets\Editor\Tests\SerializationSpeedTests.cs" />
+     <Compile Include="Assets\Editor\Tests\TestJsonStreamSerializer.cs" />
  <Reference Include="UnityEditor.Advertisements">
  <HintPath>/Applications/Unity/Unity.app/Contents/UnityExtensions/Unity/Advertisements/Editor/UnityEditor.Advertisements.dll</HintPath>
  </Reference>

@@ -88,7 +88,7 @@ public class SerializationSpeedTests {
 
     var container = ScriptableObject.CreateInstance<DataContainer>();
 
-    var jsonStreamer = new JsonStreamSerializer<SerialVector3>();
+    //var jsonStreamer = new JsonStreamSerializer<SerialVector3>();
 
     container.vectors = Enumerable.Repeat<SerialVector3>
       (new SerialVector3{x=0f,y=0f,z=0f}, count).ToArray();
@@ -103,7 +103,7 @@ public class SerializationSpeedTests {
       v3.y = yValue;
       container.vectors[i].x = v3.x;  
       container.vectors[i].y = v3.y;
-      jsonStreamer.Add(container.vectors[i]);
+      //jsonStreamer.Add(container.vectors[i]);
     }
 
     var timer = new Timer();

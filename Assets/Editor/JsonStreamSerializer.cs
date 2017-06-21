@@ -9,85 +9,67 @@ using System.Collections.Generic;
 using Timer = System.Diagnostics.Stopwatch;
 
 
-public class JsonStreamSerializer<T>: FileStream
+public class JsonStreamSerializer<T>: FileStream, IStreamSerializer<T>
 {
-  public int chunkSize;
-  public Queue<T> queue;
-  public List<int> chunkTimingRecords; 
+  public int chunkSize {get; set;}
+  public bool stopWhenDrained {get; set;}
 
-  private Timer timer = new Timer();
-  private Timer chunkTimer = new Timer();
+  public Queue<T> queue {get; set;}
 
   public JsonStreamSerializer(int queueLength = 10000, int chunkSize = 50) : 
     base(AssetDatabase.GenerateUniqueAssetPath("assets/streamedJSON"), FileMode.CreateNew) 
   {
     this.chunkSize = chunkSize;
     this.queue = new Queue<T>(queueLength);
-    chunkTimingRecords = new List<int>();
-    Debug.Log(Timer.Frequency + " timer ticks per second");
-
+    stopWhenDrained = false;
   }
 
   public void Add(T obj)
   {
     queue.Enqueue(obj);
   }
- 
-  public void WriteObjectChunkJson(Chunk<T> obj)
+
+  public void StartSaving()
   {
-    // add the comma to seperate chunks in the stream
-    string json = JsonUtility.ToJson(obj) + ",";
+    EditorApplication.update += SaveChunkOnUpdate;
+  }
+
+  public virtual void StopSaving()
+  {
+    EditorApplication.update -= SaveChunkOnUpdate;
+    Flush();
+  }
+
+  // we do allocate some memory for strings here, 
+  // but it doesn't seem problematic enough to actually cause hitching
+  // TODO - consider seeing if using a StringBuilder will allow us to reduce allocations
+  internal void WriteChunkJson(Chunk<T> chunk)
+  {
+    // add the comma to seperate chunks in the stream - 
+    // TODO consider using linebreaks and reading by line instead
+    string json = JsonUtility.ToJson(chunk) + ",";
     byte[] bytes = Encoding.UTF8.GetBytes(json);
     Write(bytes, 0, bytes.Length);
   }
 
-  public void StartSaving()
-  {
-    Debug.Log("started saving stream!");
-    timer.Start();
-    EditorApplication.update += OnSerialize;
-  }
-
-  public void StopSaving()
-  {
-    timer.Stop();
-    EditorApplication.update -= OnSerialize;
-    Debug.Log("stopped saving stream!");
-    Debug.Log("took this many milliseconds : " + timer.ElapsedMilliseconds);
-
-    int averageChunkTicks = (int)chunkTimingRecords.Average();
-    Debug.Log("saving chunks of size " + chunkSize + 
-      " took an average of " + averageChunkTicks + " ticks");
-  }
-
-  public void OnSerialize()
+  internal virtual void SaveChunkOnUpdate()
   {
     if (queue.Count == 0)
-      StopSaving();
-
-    chunkTimer.Reset();
-    chunkTimer.Start();
-
+    {
+      if (stopWhenDrained)
+        StopSaving();
+      else 
+        return; 
+    }
+    // TODO - preallocate chunks instead, but they're cheap
     var chunk = new Chunk<T>();
+    // TODO - maybe more optimized if array-to-array copy ?
     chunk.data = queue.DequeueChunk(chunkSize).ToArray();
 
-    WriteObjectChunkJson(chunk);
-    chunkTimer.Stop();
-    chunkTimingRecords.Add((int)chunkTimer.ElapsedTicks);
-    Debug.Log("wrote chunk of size " + chunkSize + 
-      " to disk in " + chunkTimer.ElapsedTicks + " ticks");
+    WriteChunkJson(chunk);
   }
 }
 
-public static class QueueExtensions
-{
-  public static IEnumerable<T> DequeueChunk<T>(this Queue<T> queue, int chunkSize) 
-  { 
-    for (int i = 0; i < chunkSize && queue.Count > 0; i++)
-    {
-      yield return queue.Dequeue();
-    }
-  }
-}
+
 
 

@@ -12,7 +12,7 @@ public static class JsonStreamTestMenu
   [MenuItem("JSON Stream/test 10000 Vec3s")]
   public static void MenuTest_10k()
   {
-    var stream = new JsonStreamSerializer<SerialVector3>(10000, 50);
+    var stream = new TestJsonStreamSerializer<SerialVector3>(10000, 50);
 
     for (int i = 0; i < 10000; i++)
     {
@@ -32,7 +32,7 @@ public static class JsonStreamTestMenu
   [MenuItem("JSON Stream/test 50000 vec3s")]
   public static void MenuTest_50k()
   {
-    var stream = new JsonStreamSerializer<SerialVector3>();
+    var stream = new TestJsonStreamSerializer<SerialVector3>(50000, 50);
 
     for (int i = 0; i < 50000; i++)
     {
@@ -49,10 +49,10 @@ public static class JsonStreamTestMenu
     stream.StartSaving();
   }
 
-  [MenuItem("JSON Stream/test 500k vec3s, 100 chunk")]
-  public static void MenuTest_500k()
+  [MenuItem("JSON Stream/test 200k vec3s, 100 chunk")]
+  public static void MenuTest_200k()
   {
-    var stream = new JsonStreamSerializer<SerialVector3>(500000, 100);
+    var stream = new TestJsonStreamSerializer<SerialVector3>(200000, 100);
 
     for (int i = 0; i < 500000; i++)
     {
@@ -72,7 +72,7 @@ public static class JsonStreamTestMenu
   [MenuItem("JSON Stream/test 10k vec3s, 20 chunk")]
   public static void MenuTest_10k_20chunk()
   {
-    var stream = new JsonStreamSerializer<SerialVector3>(10000, 20);
+    var stream = new TestJsonStreamSerializer<SerialVector3>(10000, 20);
 
     for (int i = 0; i < 10000; i++)
     {
@@ -92,7 +92,7 @@ public static class JsonStreamTestMenu
   [MenuItem("JSON Stream/test 10k vec3s, 10 chunk")]
   public static void MenuTest_10k_10chunk()
   {
-    var stream = new JsonStreamSerializer<SerialVector3>(10000, 10);
+    var stream = new TestJsonStreamSerializer<SerialVector3>(10000, 10);
 
     for (int i = 0; i < 10000; i++)
     {
@@ -112,7 +112,7 @@ public static class JsonStreamTestMenu
   [MenuItem("JSON Stream/test 10k vec3s, 100 chunk")]
   public static void MenuTest_10k_100chunk()
   {
-    var stream = new JsonStreamSerializer<SerialVector3>(10000, 100);
+    var stream = new TestJsonStreamSerializer<SerialVector3>(10000, 100);
 
     for (int i = 0; i < 10000; i++)
     {
@@ -132,7 +132,7 @@ public static class JsonStreamTestMenu
   [MenuItem("JSON Stream/test 10k vec3s, 50 chunk")]
   public static void MenuTest_10k_50chunk()
   {
-    var stream = new JsonStreamSerializer<SerialVector3>(10000, 50);
+    var stream = new TestJsonStreamSerializer<SerialVector3>(10000, 50);
 
     for (int i = 0; i < 10000; i++)
     {
