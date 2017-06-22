@@ -35,6 +35,10 @@ public class JsonStreamSerializer<T>: FileStream, IStreamSerializer<T>
 
   private void EndJsonStream()
   {
+    // for if a chunk that isn't full hasn't been written at the end
+    if (queue.Count > 0)
+      WriteChunkJson(GetChunk());
+    
     sw.Write(']');
     sw.Flush();
     Flush();
@@ -62,28 +66,30 @@ public class JsonStreamSerializer<T>: FileStream, IStreamSerializer<T>
   // this writes to the OS file buffer , not disk directly - OS flushes to disk.
   internal void WriteChunkJson(Chunk<T> chunk)
   {
-    sw.Write(JsonUtility.ToJson(chunk));
-    // add the comma to seperate objects in the stream array
-    sw.WriteLine(',');
+    sw.WriteLine(JsonUtility.ToJson(chunk));
   }
 
   internal virtual void SaveChunkOnUpdate()
   {
-    if (queue.Count == 0)
+    if (queue.Count >= chunkSize)
+      WriteChunkJson(GetChunk());
+    else if (queue.Count == 0)
     {
-      if (stopWhenDrained)
-        StopSaving();
+      if (!stopWhenDrained)
+        return;
       else 
-        return; 
+        StopSaving();
     }
-    // TODO - maybe preallocate chunks instead, but they're cheap lists of refs
-    // TODO - don't write if less than 2/3 the buffer size ?
+  }
+
+  internal Chunk<T> GetChunk()
+  {
     var chunk = new Chunk<T>();
     // TODO - maybe more optimized if array-to-array copy ?
     chunk.data = queue.DequeueChunk(chunkSize).ToArray();
-
-    WriteChunkJson(chunk);
+    return chunk;
   }
+
 }
 
 
