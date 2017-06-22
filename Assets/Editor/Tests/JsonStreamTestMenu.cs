@@ -73,33 +73,6 @@ public static class JsonStreamTestMenu
     stream.StartSaving();
   }
 
-  [MenuItem("JSON Stream/GetChunk speed")]
-  public static void MenuTest_5k_50chunk_getchunkprofile()
-  {
-    var stream = new TestJsonStreamSerializer<SerialVector3>(5000, 50);
-    MakeFakeVec3s(stream, 5000);
-   
-    var timer = new Timer();
-    var chunkList = new List<Chunk<SerialVector3>>();
-    var timings = new List<int>();
-
-    while (stream.queue.Count > 0)
-    {
-      timer.Start();
-
-      chunkList.Add(stream.GetChunk());
-
-      timer.Stop();
-      int time = (int)timer.ElapsedTicks;
-      Debug.Log("get chunk ticks: " + time);
-      timings.Add(time);
-      timer.Reset();
-    }
-
-    Debug.Log("GetChunk timings, size 50, 100 chunks");
-    PrintTimings(timings);
-  }
-
   // min :     70,  70,  70,  70, 70
   // max :     300, 330, 230, 460, 290
   // average : 90,  98,  101, 102, 104
@@ -125,36 +98,6 @@ public static class JsonStreamTestMenu
   public static void MenuTest_1k_10_GetChunk_PreInit()
   {
     TestGetChunkSpeed(1000, 10);
-  }
-
-
-  // testing around - min 910, max 10500, average 1200 ticks
-  [MenuItem("JSON Stream/WriteChunkJson speed")]
-  public static void MenuTest_5k_50chunk_writechunkjson_profile()
-  {
-    var stream = new TestJsonStreamSerializer<SerialVector3>(5000, 50);
-    MakeFakeVec3s(stream, 5000);
-
-    var timer = new Timer();
-    var chunkList = new List<Chunk<SerialVector3>>();
-    var timings = new List<int>();
-
-    while (stream.queue.Count > 0)
-    {
-      var chunk = stream.GetChunk();
-      timer.Start();
-
-      stream.WriteChunkJson(chunk);
-
-      timer.Stop();
-      int time = (int)timer.ElapsedTicks;
-      Debug.Log("write chunk json ticks: " + time);
-      timings.Add(time);
-      timer.Reset();
-    }
-
-    Debug.Log("WriteChunkJson timings, size 50, 100 chunks");
-    PrintTimings(timings);
   }
 
   // ALL CHUNK TIMINGS (so far) ON MID-2015 15" MBP - max spec
