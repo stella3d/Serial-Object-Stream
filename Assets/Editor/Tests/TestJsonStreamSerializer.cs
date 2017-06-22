@@ -5,7 +5,7 @@ using Timer = System.Diagnostics.Stopwatch;
 
 
 // This class exists to be able to debug & performance test the serializer
-public class TestJsonStreamSerializer<T> : JsonStreamSerializer<T>
+public class TestJsonStreamSerializer<T> : JsonStreamSerializer<T> where T: new()
 {
   private Timer timer = new Timer();
   private Timer chunkTimer = new Timer();

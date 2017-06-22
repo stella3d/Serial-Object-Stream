@@ -7,22 +7,31 @@ using UnityEditor;
 using System.Collections;
 using System.Collections.Generic;
 
-public class JsonStreamSerializer<T>: FileStream, IStreamSerializer<T>
+public class JsonStreamSerializer<T>: FileStream, IStreamSerializer<T> where T: new()
 {
   public int chunkSize {get; set;}
   public bool stopWhenDrained {get; set;}
 
   public Queue<T> queue {get; set;}
 
+  public int frameSkip = 5;
+  private int frameSkipIndex = 1;
+
+  //public int flushInterval = 20;
+  //public int flushIntervalIndex = 1;
+
   private StreamWriter sw;
 
-  public JsonStreamSerializer(int queueLength = 10000, int chunkSize = 50) : 
-    base(AssetDatabase.GenerateUniqueAssetPath("assets/streamedJSON"), FileMode.CreateNew) 
+  public JsonStreamSerializer(int queueLength = 10000, int chunkSize = 50, int bufferKb = 8) : 
+    base(
+      AssetDatabase.GenerateUniqueAssetPath("assets/streamedJSON"), 
+      FileMode.CreateNew, FileAccess.Write, FileShare.None, 1024 * bufferKb
+    ) 
   {
     this.chunkSize = chunkSize;
     this.queue = new Queue<T>(queueLength);
     stopWhenDrained = false;
-    sw = new StreamWriter(this);
+    sw = new StreamWriter(this, Encoding.UTF8, 1024 * bufferKb);
     InitJsonStream();
   }
 
@@ -31,6 +40,8 @@ public class JsonStreamSerializer<T>: FileStream, IStreamSerializer<T>
   private void InitJsonStream()
   {
     sw.WriteLine('[');
+    sw.Flush();
+    Flush();
   }
 
   private void EndJsonStream()
@@ -67,18 +78,37 @@ public class JsonStreamSerializer<T>: FileStream, IStreamSerializer<T>
   internal void WriteChunkJson(Chunk<T> chunk)
   {
     sw.WriteLine(JsonUtility.ToJson(chunk));
+
+    /*
+    if (flushIntervalIndex == flushInterval)
+    {
+      Debug.Log("flushing!");
+      flushIntervalIndex = 1;
+      sw.Flush();
+      Flush();
+    }
+    else
+      flushIntervalIndex++;
+    */
   }
 
   internal virtual void SaveChunkOnUpdate()
   {
-    if (queue.Count >= chunkSize)
-      WriteChunkJson(GetChunk());
-    else if (queue.Count == 0)
+    if (frameSkipIndex != frameSkip)
+      frameSkipIndex++;
+    else 
     {
-      if (!stopWhenDrained)
-        return;
-      else 
-        StopSaving();
+      frameSkipIndex = 1;
+
+      if (queue.Count >= chunkSize)
+        WriteChunkJson(GetChunk());
+      else if (queue.Count == 0)
+      {
+        if (!stopWhenDrained)
+          return;
+        else 
+          StopSaving();
+      }
     }
   }
 
@@ -88,6 +118,15 @@ public class JsonStreamSerializer<T>: FileStream, IStreamSerializer<T>
     // TODO - maybe more optimized if array-to-array copy ?
     chunk.data = queue.DequeueChunk(chunkSize).ToArray();
     return chunk;
+  }
+
+  // first read access to the queue takes almost 2ms
+  // but if we do this before, seems to help cache that cost
+  // edit - maybe not ???
+  internal void InitQueueAccess()
+  {
+    queue.Enqueue(new T());
+    queue.Dequeue();
   }
 
 }
