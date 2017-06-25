@@ -82,6 +82,36 @@ public static class JsonStreamTestMenu
     TestGetChunkSpeed(5000, 50);
   }
 
+	// min :     69,70, 70
+	// max :     83520, 100415
+	// average : 128, 115, 109														-- 118 global average
+	[MenuItem("JSON Stream/GetChunk speed - 500k, 50")]
+	public static void MenuTest_500k_50_GetChunk_PreInit()
+	{
+		TestGetChunkSpeed(500000, 50);
+	}
+
+	// NOTE : max without the first one taking way longer is ~90 ticks
+	// 4500 / 100 = 45, so it's adding ~45 to the average of 100 repeats
+	// so, average without that looks to be more like 40-45 ticks
+	// min :     25,   25, 25
+	// max :     4575, 4652
+	// average : 80,   87,  79.2
+	[MenuItem("JSON Stream/CopyChunk speed - 50")]
+	public static void MenuTest_5k_50_CopyChunk()
+	{
+		TestCopyChunkSpeed(50000, 50);
+	}
+
+	// min :     25,  22, 
+	// max :     4464, 3618, (just the first one)
+	// average : 30,  30
+	[MenuItem("JSON Stream/CopyChunk speed - 500k, 50")]
+	public static void MenuTest_500k_50_CopyChunk()
+	{
+		TestCopyChunkSpeed(500000, 50);
+	}
+
   // min :     40, 40, 40, 40, 40
   // max :     170, 310, 150, 110, 110
   // average : 64, 57, 55, 52, 53 
@@ -90,6 +120,15 @@ public static class JsonStreamTestMenu
   {
     TestGetChunkSpeed(2000, 20);
   }
+
+	// min :     10, 10
+	// max :     4281,	550						(always just the first one)
+	// average : 14, 14 
+	[MenuItem("JSON Stream/CopyChunk speed - 200k, 20")]
+	public static void MenuTest_200k_20_CopyChunk()
+	{
+		TestCopyChunkSpeed(200000, 20);
+	}
 
   // min :     30, 30, 20, 30, 30
   // max :     100, 190, 180, 80, 330
@@ -233,6 +272,32 @@ public static class JsonStreamTestMenu
     PrintTimings(timings);
   }
 
+	private static void TestCopyChunkSpeed(int total, int chunkSize)
+	{
+		var stream = new TestJsonStreamSerializer<SerialVector3>(total, chunkSize);
+		MakeFakeVec3s(stream, total);
+
+		var timer = new Timer();
+		var timings = new List<int>();
+
+		stream.InitQueueAccess();
+
+		while (stream.queue.Count > 0)
+		{
+			timer.Start();
+
+			stream.CopyChunk();
+
+			timer.Stop();
+			int time = (int)timer.ElapsedTicks;
+			Debug.Log("CopyChunk (array copy) ticks: " + time);
+			timings.Add(time);
+			timer.Reset();
+		}
+
+		Debug.Log("CopyChunk (array copy) timings, chunk size: " + chunkSize);
+		PrintTimings(timings);
+	}
 
   private static void MakeFakeVec3s(IStreamSerializer<SerialVector3> stream, int count)
   {
@@ -255,6 +320,22 @@ public static class JsonStreamTestMenu
     Debug.Log("max : " + timings.Max() + " " + unit);
     Debug.Log("average : " + timings.Average() + " " + unit);
   }
+
+
+	[MenuItem("JSON Stream/CopyChunk Allocations")]
+	public static void CopyChunk_AllocationsPerCallback()
+	{
+		var stream = new TestJsonStreamSerializer<SerialVector3>(100000, 25);
+		MakeFakeVec3s(stream, 100000);
+
+		stream.InitQueueAccess();
+
+		// if you comment out the line that serializes to json + writes to stream,
+		// there are 0 allocations per frame added by this.
+		stream.StartSaving ();
+	}
+
+
 }
 
 
